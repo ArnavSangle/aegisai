@@ -25,7 +25,7 @@ pillow>=10.0.0
 
 # AI HAT+ / Hailo Support
 # hailo-platform - install separately via Hailo SDK
-picamera2>=0.3.12           # Pi Camera support
+# picamera2 - install via apt: sudo apt install python3-picamera2
 
 # Fleet Management / MARL
 # ray[rllib] - optional, install separately if needed

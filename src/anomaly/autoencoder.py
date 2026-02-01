@@ -4,7 +4,7 @@ Neural network based anomaly detection using reconstruction error
 """
 
 import numpy as np
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List, Tuple, TYPE_CHECKING
 from pathlib import Path
 from loguru import logger
 
@@ -15,6 +15,7 @@ try:
     TF_AVAILABLE = True
 except ImportError:
     TF_AVAILABLE = False
+    Model = Any  # Type stub when TF not available
     logger.warning("TensorFlow not available, Autoencoder will be disabled")
 
 from ..core.base_module import BaseModule
