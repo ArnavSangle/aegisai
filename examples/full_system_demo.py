@@ -183,10 +183,14 @@ class AegisDemo:
             )
             
             # 6. Get action from agent
-            if self.decision_agent and self.decision_agent.model:
-                action_result = self.decision_agent.process(observation)
-                action = action_result['action']
-                action_type = action_result['action_type']
+            if self.decision_agent and hasattr(self.decision_agent, 'model') and self.decision_agent.model:
+                try:
+                    action_result = self.decision_agent.process(observation)
+                    action = action_result['action']
+                    action_type = action_result['action_type']
+                except Exception:
+                    action = np.zeros(4, dtype=np.float32)
+                    action_type = 'stop'
             else:
                 # Fallback: simple reactive control
                 action = np.zeros(4, dtype=np.float32)
