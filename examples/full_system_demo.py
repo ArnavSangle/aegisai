@@ -75,7 +75,7 @@ class AegisDemo:
         print("Initializing AegisAI Demo...")
         
         # Import modules
-        from src.anomaly import AnomalyDetector
+        from src.anomaly import AnomalyDetector, IsolationForestDetector
         from src.prediction import LSTMPredictor
         from src.decision import PPOAgent
         
@@ -83,6 +83,10 @@ class AegisDemo:
         print("  [1/3] Anomaly Detection...", end=" ")
         self.anomaly_detector = AnomalyDetector()
         if self.anomaly_detector.initialize():
+            # Train with random "normal" data for demo
+            normal_data = np.random.randn(200, 64).astype(np.float32)
+            if hasattr(self.anomaly_detector, 'isolation_forest') and self.anomaly_detector.isolation_forest:
+                self.anomaly_detector.isolation_forest.fit(normal_data)
             print("✓")
         else:
             print("✗")
