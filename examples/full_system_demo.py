@@ -170,7 +170,7 @@ class AegisDemo:
             
             # 4. Predict future states (skip if not available)
             prediction_result = {'forecast': None, 'confidence': 0}
-            if self.predictor and self.predictor.initialized:
+            if self.predictor:
                 try:
                     prediction_input = sensor_array[:8]  # Use first 8 features
                     prediction_result = self.predictor.process(prediction_input)
