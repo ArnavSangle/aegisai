@@ -1,0 +1,21 @@
+# Hailo AI HAT+ Configuration
+# For Raspberry Pi AI HAT+ with Hailo-8L
+
+hailo:
+  device:
+    id: 0
+    name: "hailo8l"
+    
+  runtime:
+    scheduler_algorithm: "round_robin"
+    power_mode: "performance"  # performance | balanced | power_saver
+    
+  hef_paths:
+    mobilenet_v3: "models/hailo/mobilenet_v3_large.hef"
+    yolov8n: "models/hailo/yolov8n.hef"
+    lstm_encoder: "models/hailo/lstm_encoder.hef"
+    
+  optimization:
+    batch_size: 1
+    async_inference: true
+    double_buffering: true

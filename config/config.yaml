@@ -1,0 +1,164 @@
+# AegisAI Master Configuration
+# Raspberry Pi 5 + AI HAT+ Configuration
+
+system:
+  name: "AegisAI"
+  version: "1.0.0"
+  device: "raspberry_pi_5"
+  log_level: "INFO"
+  
+hardware:
+  pi:
+    model: "Raspberry Pi 5"
+    ram_gb: 16
+    storage_gb: 128
+    cooling: "active"  # active | passive
+    
+  ai_hat:
+    enabled: true
+    model: "hailo8l"  # Hailo-8L on AI HAT+
+    compute_units: 13  # TOPS
+    
+  camera:
+    enabled: true
+    resolution: [1920, 1080]
+    fps: 30
+    
+  mcu:
+    type: "esp32_s3"
+    connection: "serial"  # serial | ble | wifi
+    port: "/dev/ttyUSB0"
+    baudrate: 115200
+
+# Anomaly Detection Configuration
+anomaly:
+  isolation_forest:
+    n_estimators: 100
+    contamination: 0.1
+    max_samples: "auto"
+    random_state: 42
+    
+  autoencoder:
+    input_dim: 64
+    encoding_dim: 16
+    hidden_layers: [32, 16, 32]
+    activation: "relu"
+    threshold_percentile: 95
+    
+  ensemble:
+    method: "cascade"  # cascade | parallel | voting
+    weights: [0.4, 0.6]  # IF weight, AE weight
+
+# Prediction Configuration (LSTM)
+prediction:
+  lstm:
+    sequence_length: 50
+    features: 8
+    hidden_units: [64, 32]
+    dropout: 0.2
+    prediction_horizon: 10
+    
+  tflite:
+    quantization: "int8"  # float16 | int8 | none
+    delegate: "hailo"     # hailo | xnnpack | none
+    num_threads: 4
+
+# Decision Configuration (PPO)
+decision:
+  ppo:
+    learning_rate: 0.0003
+    n_steps: 2048
+    batch_size: 64
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.01
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    
+  action_space:
+    type: "discrete"  # discrete | continuous | multi_discrete
+    n_actions: 8
+    
+  observation_space:
+    type: "box"
+    shape: [64]
+    low: -1.0
+    high: 1.0
+
+# Vision Configuration (MobileNetV3)
+vision:
+  model:
+    architecture: "mobilenet_v3_large"
+    input_size: [224, 224, 3]
+    num_classes: 10
+    pretrained: true
+    
+  inference:
+    delegate: "hailo"  # Use AI HAT+
+    batch_size: 1
+    confidence_threshold: 0.5
+    nms_threshold: 0.4
+    
+  preprocessing:
+    normalize: true
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+# Fleet Management Configuration (MARL)
+fleet:
+  num_agents: 4
+  communication:
+    protocol: "mesh"  # mesh | star | ring
+    range_m: 50
+    
+  marl:
+    algorithm: "mappo"  # mappo | qmix | maddpg
+    shared_policy: true
+    centralized_critic: true
+    
+  coordination:
+    task_allocation: "auction"  # auction | greedy | learned
+    collision_avoidance: true
+    formation_control: true
+
+# MCU Communication Configuration
+mcu:
+  protocol:
+    type: "custom_binary"  # custom_binary | json | msgpack
+    max_packet_size: 256
+    checksum: "crc16"
+    
+  sensors:
+    - name: "imu"
+      type: "mpu6050"
+      rate_hz: 100
+    - name: "distance"
+      type: "vl53l0x"
+      rate_hz: 50
+    - name: "current"
+      type: "ina219"
+      rate_hz: 10
+      
+  actuators:
+    - name: "motors"
+      type: "pwm"
+      channels: 4
+    - name: "servos"
+      type: "pwm"
+      channels: 2
+
+# Paths
+paths:
+  models: "models/"
+  data: "data/"
+  logs: "logs/"
+  checkpoints: "checkpoints/"
+
+# Performance Settings
+performance:
+  use_multiprocessing: true
+  num_workers: 4
+  memory_limit_mb: 8192
+  inference_batch_timeout_ms: 10
