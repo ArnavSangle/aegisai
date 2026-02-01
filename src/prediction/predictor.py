@@ -15,6 +15,7 @@ try:
     TF_AVAILABLE = True
 except ImportError:
     TF_AVAILABLE = False
+    Model = Any  # Type stub when TF not available
 
 from ..core.base_module import BaseModule
 from .tflite_converter import TFLiteConverter
