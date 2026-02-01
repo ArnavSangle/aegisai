@@ -159,12 +159,23 @@ class AegisDemo:
             if len(sensor_array) < 64:
                 sensor_array = np.pad(sensor_array, (0, 64 - len(sensor_array)))
             
-            # 3. Check for anomalies
-            anomaly_result = self.anomaly_detector.process(sensor_array)
+            # 3. Check for anomalies (skip if not available)
+            if self.anomaly_detector:
+                try:
+                    anomaly_result = self.anomaly_detector.process(sensor_array)
+                except Exception:
+                    anomaly_result = {'score': 0, 'is_anomaly': False}
+            else:
+                anomaly_result = {'score': 0, 'is_anomaly': False}
             
-            # 4. Predict future states
-            prediction_input = sensor_array[:8]  # Use first 8 features
-            prediction_result = self.predictor.process(prediction_input)
+            # 4. Predict future states (skip if not available)
+            prediction_result = {'forecast': None, 'confidence': 0}
+            if self.predictor and self.predictor.initialized:
+                try:
+                    prediction_input = sensor_array[:8]  # Use first 8 features
+                    prediction_result = self.predictor.process(prediction_input)
+                except Exception:
+                    pass
             
             # 5. Build observation
             observation = self.build_observation(
