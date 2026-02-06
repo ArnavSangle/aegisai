@@ -1,6 +1,7 @@
 """
 MCU Protocol Definition
 Binary protocol for ESP32-S3 communication
+Water Quality Buoy Sensors and Actuators
 """
 
 import struct
@@ -21,28 +22,28 @@ class PacketType(Enum):
 
 
 class SensorType(Enum):
-    """Sensor types supported by MCU."""
-    IMU = 0x10          # MPU6050/ICM20948
-    DISTANCE = 0x11     # VL53L0X
-    CURRENT = 0x12      # INA219
-    TEMPERATURE = 0x13
-    PRESSURE = 0x14
-    GPS = 0x15
-    ENCODER = 0x16
-    BATTERY = 0x17
+    """Water quality sensor types supported by MCU."""
+    WATER_TEMP = 0x10      # DS18B20 waterproof probe
+    PH = 0x11              # Analog pH sensor
+    TURBIDITY = 0x12       # Optical turbidity (NTU)
+    CONDUCTIVITY = 0x13    # EC/TDS probe
+    BATTERY = 0x14         # INA219 power monitor
+    GPS = 0x15             # NEO-6M GPS module
+    DEPTH = 0x16           # Water level sensor
+    DISSOLVED_O2 = 0x17    # Optional DO sensor
 
 
 class ActuatorType(Enum):
-    """Actuator types supported by MCU."""
-    MOTOR_PWM = 0x20
-    SERVO = 0x21
-    LED = 0x22
-    BUZZER = 0x23
+    """Actuator types for sampling mechanism."""
+    PUMP = 0x20            # Peristaltic pump
+    VALVE = 0x21           # Sample valve selector
+    CAROUSEL = 0x22        # Vial carousel motor
+    LED_STATUS = 0x23      # Status indicator LED
 
 
 @dataclass
 class SensorData:
-    """Sensor data structure."""
+    """Water quality sensor data structure."""
     name: str
     sensor_type: SensorType
     value: Union[float, List[float]]
@@ -69,19 +70,58 @@ class SensorData:
 
 
 @dataclass
-class ActuatorCommand:
-    """Actuator command structure."""
-    actuator_type: str
-    values: List[float]
-    duration_ms: int = 0
+class WaterQualityReading:
+    """Combined water quality reading from all sensors."""
+    temperature: float  # Celsius
+    ph: float           # 0-14
+    turbidity: float    # NTU
+    conductivity: float # µS/cm
+    timestamp: float
+    gps_lat: Optional[float] = None
+    gps_lon: Optional[float] = None
+    battery_voltage: Optional[float] = None
+    
+    def to_numpy(self):
+        """Convert to numpy array for AI processing."""
+        import numpy as np
+        return np.array([
+            self.temperature,
+            self.ph,
+            self.turbidity,
+            self.conductivity
+        ], dtype=np.float32)
+    
+    def normalize(self, ranges: Dict[str, tuple]) -> 'WaterQualityReading':
+        """Normalize values to [-1, 1] range."""
+        def norm(val, min_v, max_v):
+            return 2.0 * (val - min_v) / (max_v - min_v) - 1.0
+        
+        return WaterQualityReading(
+            temperature=norm(self.temperature, *ranges.get('temperature', (-10, 50))),
+            ph=norm(self.ph, *ranges.get('ph', (0, 14))),
+            turbidity=norm(self.turbidity, *ranges.get('turbidity', (0, 1000))),
+            conductivity=norm(self.conductivity, *ranges.get('conductivity', (0, 5000))),
+            timestamp=self.timestamp,
+            gps_lat=self.gps_lat,
+            gps_lon=self.gps_lon,
+            battery_voltage=self.battery_voltage
+        )
+
+
+@dataclass
+class SampleCommand:
+    """Command to trigger water sampling."""
+    vial_index: int
+    volume_ml: float = 50.0
+    duration_seconds: float = 5.0
     
     def to_packet(self) -> bytes:
         """Convert command to binary packet."""
         protocol = MCUProtocol({})
-        return protocol.create_command('actuator', {
-            'type': self.actuator_type,
-            'values': self.values,
-            'duration': self.duration_ms
+        return protocol.create_command('sample', {
+            'vial': self.vial_index,
+            'volume': self.volume_ml,
+            'duration': self.duration_seconds
         })
 
 

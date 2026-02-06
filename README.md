@@ -1,88 +1,100 @@
-# AegisAI - Raspberry Pi 5 AI Infrastructure
+# AegisAI - Autonomous River Sampling Buoy
 
-## 🎯 Competition-Ready Full Stack AI System
+## Agentic AI for Water Quality Monitoring
 
-This project implements an industry-grade AI infrastructure designed for Raspberry Pi 5 with AI HAT+.
+AegisAI transforms a simple floating buoy into an intelligent, self-organizing research assistant. Instead of passively recording data on fixed timers, the buoy detects anomalies, predicts water quality changes, decides when to sample, and coordinates with other buoys—all running on solar power with no internet connection.
 
-### 📋 Hardware Requirements
+### Hardware
 
 | Component | Specification |
 |-----------|---------------|
-| **Board** | Raspberry Pi 5 |
-| **RAM** | 16GB |
-| **Storage** | 128GB MicroSD (A2 rated recommended) |
-| **Cooling** | Active cooling (fan + heatsink) |
-| **AI Accelerator** | Raspberry Pi AI HAT+ (Hailo-8L) |
-| **MCU** | ESP32-S3 (for peripheral control) |
+| Compute | Raspberry Pi 5 (8GB) |
+| Storage | 64GB MicroSD |
+| Power | 5W Solar Panel + 20Wh Battery |
+| MCU | ESP32-S3 |
+| Sensors | pH, Temperature, Turbidity, Conductivity |
+| Sampling | Peristaltic Pump, 12-vial Carousel |
+| Communication | LoRa Radio (915MHz) |
 
-### 🏗️ Architecture
+### Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      AegisAI Core                           │
+│                    AegisAI Buoy System                      │
 ├─────────────┬─────────────┬─────────────┬──────────────────┤
 │  Anomaly    │  Prediction │  Decision   │     Vision       │
-│  Detection  │    Engine   │   Making    │    Pipeline      │
+│  Detection  │    Engine   │   Making    │   (Optional)     │
 │             │             │             │                  │
 │ Isolation   │   LSTM      │    PPO      │  MobileNetV3     │
-│ Forest +    │  (TFLite)   │   (RL)      │  (AI HAT+)       │
-│ Autoencoder │             │             │                  │
+│ Forest +    │  (TFLite)   │   (RL)      │  Contaminant     │
+│ Autoencoder │             │             │  Detection       │
 ├─────────────┴─────────────┴─────────────┴──────────────────┤
-│                    Fleet Management (MARL)                  │
+│                Fleet Coordination (MAPPO via LoRa)          │
 ├─────────────────────────────────────────────────────────────┤
-│                    MCU Communication Layer                  │
-│                  (ESP32-S3 Serial/BLE/WiFi)                │
+│                   MCU + Water Quality Sensors               │
+│              pH | Temperature | Turbidity | Conductivity    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 📁 Project Structure
+### Project Structure
 
 ```
 AegisAI/
 ├── config/                 # Configuration files
 ├── src/
-│   ├── anomaly/           # Anomaly detection (Isolation Forest + Autoencoder)
-│   ├── prediction/        # LSTM prediction engine
-│   ├── decision/          # PPO reinforcement learning
-│   ├── vision/            # MobileNetV3 computer vision
-│   ├── fleet/             # Multi-agent fleet management
-│   ├── mcu/               # ESP32-S3 communication
-│   └── core/              # Core utilities and base classes
+│   ├── anomaly/           # Cascade anomaly detection (IF + Autoencoder)
+│   ├── prediction/        # LSTM water quality prediction
+│   ├── decision/          # PPO sampling decisions
+│   ├── vision/            # Optional visual contaminant detection
+│   ├── fleet/             # Multi-buoy MAPPO coordination
+│   ├── mcu/               # ESP32-S3 sensor/pump control
+│   └── core/              # Main orchestrator and utilities
 ├── models/                # Trained models and TFLite exports
-├── data/                  # Training data and datasets
-├── scripts/               # Setup and deployment scripts
-├── tests/                 # Unit and integration tests
-└── docs/                  # Documentation
+├── scripts/               # Setup scripts and diagram generation
+├── tests/                 # Unit tests
+└── docs/                  # Documentation and presentations
 ```
 
-### 🚀 Quick Start
+### Quick Start
 
-1. **Flash Raspberry Pi OS (64-bit)**
-2. **Run setup script:**
+1. **Setup Raspberry Pi:**
    ```bash
    chmod +x scripts/setup_pi5.sh
    ./scripts/setup_pi5.sh
    ```
-3. **Install Python dependencies:**
+
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
-4. **Start the system:**
+
+3. **Generate presentation diagrams:**
+   ```bash
+   python scripts/generate_diagrams.py
+   ```
+
+4. **Start the buoy system:**
    ```bash
    python -m src.core.main
    ```
 
-### 📦 Components
+### AI Components
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Anomaly Detection | Isolation Forest → Autoencoder | Detect system anomalies |
-| Prediction | LSTM (TFLite) | Time-series forecasting |
-| Decision | PPO | Reinforcement learning decisions |
-| Vision | MobileNetV3 | Real-time object detection |
-| Fleet | MARL | Multi-agent coordination |
-| MCU | ESP32-S3 | Sensor/actuator control |
+| Component | Model | Purpose |
+|-----------|-------|---------|
+| Anomaly Detection | Isolation Forest + Autoencoder | Detect unusual water quality readings |
+| Prediction | Stacked LSTM (TFLite int8) | Forecast water quality changes |
+| Decision | PPO (Stable Baselines3) | Decide when to sample, conserve power |
+| Vision | MobileNetV3 (optional) | Detect visual contaminants (algae, oil) |
+| Fleet | MAPPO | Coordinate multi-buoy deployments |
 
-### 📄 License
+### Key Features
 
-MIT License - Built for AI/Robotics competitions
+- **Cascade Anomaly Detection** — Fast IF screening, deep AE analysis only when needed (60% compute savings)
+- **Predictive Sampling** — Increases sampling before predicted contamination events
+- **Adaptive Power Management** — Learns to schedule inference during peak solar
+- **Fleet Coordination** — Buoys converge on anomaly locations over LoRa mesh
+
+### License
+
+MIT License

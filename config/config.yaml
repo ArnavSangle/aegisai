@@ -1,34 +1,87 @@
 # AegisAI Master Configuration
-# Raspberry Pi 5 + AI HAT+ Configuration
+# Autonomous River Sampling Buoy with Agentic AI
+# Raspberry Pi 5 + Solar Power Configuration
 
 system:
   name: "AegisAI"
   version: "1.0.0"
   device: "raspberry_pi_5"
+  application: "water_buoy"
   log_level: "INFO"
   
 hardware:
   pi:
     model: "Raspberry Pi 5"
-    ram_gb: 16
-    storage_gb: 128
-    cooling: "active"  # active | passive
+    ram_gb: 8
+    storage_gb: 64
+    cooling: "passive"  # passive for waterproof enclosure
     
   ai_hat:
-    enabled: true
-    model: "hailo8l"  # Hailo-8L on AI HAT+
-    compute_units: 13  # TOPS
+    enabled: false  # Optional for buoy deployment
+    model: "hailo8l"
+    compute_units: 13
     
   camera:
-    enabled: true
-    resolution: [1920, 1080]
-    fps: 30
+    enabled: false  # Optional visual contaminant detection
+    resolution: [640, 480]
+    fps: 1  # Low rate for power conservation
     
   mcu:
     type: "esp32_s3"
-    connection: "serial"  # serial | ble | wifi
+    connection: "serial"
     port: "/dev/ttyUSB0"
     baudrate: 115200
+    
+  power:
+    source: "solar"
+    solar_panel_watts: 5
+    battery_capacity_wh: 20
+    low_power_threshold: 0.2  # 20% battery triggers power saving
+
+# Water Quality Sensors
+sensors:
+  water_temperature:
+    type: "ds18b20"
+    rate_hz: 0.1  # Every 10 seconds
+    unit: "celsius"
+    range: [-10, 50]
+    
+  ph:
+    type: "analog_ph"
+    rate_hz: 0.1
+    unit: "pH"
+    range: [0, 14]
+    calibration:
+      ph4_voltage: 2.03
+      ph7_voltage: 1.50
+      
+  turbidity:
+    type: "optical_ntu"
+    rate_hz: 0.1
+    unit: "NTU"
+    range: [0, 1000]
+    
+  conductivity:
+    type: "ec_probe"
+    rate_hz: 0.1
+    unit: "uS_cm"
+    range: [0, 5000]
+    
+  gps:
+    type: "neo6m"
+    rate_hz: 0.01  # Every 100 seconds
+    
+  battery:
+    type: "ina219"
+    rate_hz: 0.1
+
+# Sampling Mechanism
+sampling:
+  pump_type: "peristaltic"
+  sample_volume_ml: 50
+  vial_capacity: 12
+  pump_power_watts: 1.0
+  pump_duration_seconds: 5
 
 # Anomaly Detection Configuration
 anomaly:
@@ -39,29 +92,31 @@ anomaly:
     random_state: 42
     
   autoencoder:
-    input_dim: 64
-    encoding_dim: 16
-    hidden_layers: [32, 16, 32]
+    input_dim: 4  # temp, pH, turbidity, conductivity
+    encoding_dim: 2
+    hidden_layers: [8, 4, 8]
     activation: "relu"
     threshold_percentile: 95
     
   ensemble:
-    method: "cascade"  # cascade | parallel | voting
-    weights: [0.4, 0.6]  # IF weight, AE weight
+    method: "cascade"
+    weights: [0.4, 0.6]
+    if_low_threshold: 0.3
+    if_high_threshold: 0.7
 
 # Prediction Configuration (LSTM)
 prediction:
   lstm:
-    sequence_length: 50
-    features: 8
+    sequence_length: 50  # ~8 hours at 10-min intervals
+    features: 4  # temp, pH, turbidity, conductivity
     hidden_units: [64, 32]
     dropout: 0.2
-    prediction_horizon: 10
+    prediction_horizon: 10  # 10 timesteps ahead
     
   tflite:
-    quantization: "int8"  # float16 | int8 | none
-    delegate: "hailo"     # hailo | xnnpack | none
-    num_threads: 4
+    quantization: "int8"
+    delegate: "xnnpack"  # CPU-only for power efficiency
+    num_threads: 2
 
 # Decision Configuration (PPO)
 decision:
@@ -78,76 +133,88 @@ decision:
     max_grad_norm: 0.5
     
   action_space:
-    type: "discrete"  # discrete | continuous | multi_discrete
-    n_actions: 8
+    type: "discrete"
+    n_actions: 6  # sample, wait_low, wait_normal, increase_rate, decrease_rate, broadcast_alert
+    actions:
+      - "sample_now"
+      - "wait_low_power"
+      - "wait_normal"
+      - "increase_sampling_rate"
+      - "decrease_sampling_rate"
+      - "broadcast_alert"
     
   observation_space:
     type: "box"
-    shape: [64]
+    shape: [16]  # sensors(4) + anomaly(2) + prediction(4) + battery(1) + time(1) + fleet(4)
     low: -1.0
     high: 1.0
+    
+  rewards:
+    sample_during_anomaly: 10
+    correct_prediction: 5
+    sample_during_normal: -3
+    missed_anomaly: -5
+    energy_conservation: 2
 
-# Vision Configuration (MobileNetV3)
+# Vision Configuration (Optional - for visual contaminant detection)
 vision:
+  enabled: false
   model:
-    architecture: "mobilenet_v3_large"
+    architecture: "mobilenet_v3_small"  # Smaller model for power efficiency
     input_size: [224, 224, 3]
-    num_classes: 10
+    num_classes: 5  # clear, algae, oil, sediment, debris
     pretrained: true
     
   inference:
-    delegate: "hailo"  # Use AI HAT+
+    delegate: "xnnpack"
     batch_size: 1
-    confidence_threshold: 0.5
-    nms_threshold: 0.4
-    
-  preprocessing:
-    normalize: true
-    mean: [0.485, 0.456, 0.406]
-    std: [0.229, 0.224, 0.225]
+    confidence_threshold: 0.6
 
 # Fleet Management Configuration (MARL)
 fleet:
-  num_agents: 4
+  num_buoys: 4
   communication:
-    protocol: "mesh"  # mesh | star | ring
-    range_m: 50
+    protocol: "lora_mesh"
+    frequency_mhz: 915  # US ISM band (868 for EU)
+    spreading_factor: 7
+    bandwidth_khz: 125
+    range_m: 3000  # 3km over water
     
   marl:
-    algorithm: "mappo"  # mappo | qmix | maddpg
+    algorithm: "mappo"
     shared_policy: true
     centralized_critic: true
     
   coordination:
-    task_allocation: "auction"  # auction | greedy | learned
-    collision_avoidance: true
-    formation_control: true
+    coverage_optimization: true
+    anomaly_convergence: true
+    redundancy_avoidance: true
+    
+  rewards:
+    coverage_bonus: 10
+    anomaly_detection: 5
+    redundant_sample: -3
 
 # MCU Communication Configuration
 mcu:
   protocol:
-    type: "custom_binary"  # custom_binary | json | msgpack
+    type: "custom_binary"
     max_packet_size: 256
     checksum: "crc16"
+    sync_bytes: [0xAE, 0x5A]
     
-  sensors:
-    - name: "imu"
-      type: "mpu6050"
-      rate_hz: 100
-    - name: "distance"
-      type: "vl53l0x"
-      rate_hz: 50
-    - name: "current"
-      type: "ina219"
-      rate_hz: 10
-      
-  actuators:
-    - name: "motors"
-      type: "pwm"
-      channels: 4
-    - name: "servos"
-      type: "pwm"
-      channels: 2
+  sensor_types:
+    WATER_TEMP: 0x10
+    PH: 0x11
+    TURBIDITY: 0x12
+    CONDUCTIVITY: 0x13
+    BATTERY: 0x14
+    GPS: 0x15
+    
+  actuator_types:
+    PUMP: 0x20
+    VALVE: 0x21
+    LED_STATUS: 0x22
 
 # Paths
 paths:
@@ -155,10 +222,29 @@ paths:
   data: "data/"
   logs: "logs/"
   checkpoints: "checkpoints/"
+  samples: "samples/"  # Sample metadata storage
+
+# Power Management
+power:
+  modes:
+    active:
+      inference_interval_s: 600  # 10 minutes
+      sensor_rate_hz: 0.1
+    alert:
+      inference_interval_s: 30
+      sensor_rate_hz: 1.0
+    low_power:
+      inference_interval_s: 3600  # 1 hour
+      sensor_rate_hz: 0.01
+      
+  thresholds:
+    low_battery: 0.2
+    critical_battery: 0.1
+    solar_sufficient: 0.5  # Watts threshold for charging
 
 # Performance Settings
 performance:
-  use_multiprocessing: true
-  num_workers: 4
-  memory_limit_mb: 8192
-  inference_batch_timeout_ms: 10
+  use_multiprocessing: false  # Single-threaded for power
+  num_workers: 1
+  memory_limit_mb: 1024
+  inference_batch_timeout_ms: 100
