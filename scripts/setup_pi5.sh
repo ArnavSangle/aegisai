@@ -98,10 +98,7 @@ echo -e "${GREEN}Step 5: Install Python Dependencies${NC}"
 # Install PyTorch for ARM (Pi 5 compatible)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# Install TensorFlow Lite runtime
-pip install tflite-runtime
-
-# Install other dependencies
+# Install other dependencies (tensorflow includes tflite interpreter)
 pip install -r requirements.txt
 
 echo -e "${GREEN}Step 6: Configure Raspberry Pi Camera${NC}"
