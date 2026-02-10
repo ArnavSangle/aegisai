@@ -35,7 +35,6 @@ Water Quality Buoy Sensors and Actuators
 """
 
 import struct
-from dataclasses import dataclass
 from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 import time
