@@ -41,7 +41,6 @@ sudo apt install -y \
     git \
     cmake \
     build-essential \
-    libatlas-base-dev \
     libopenblas-dev \
     libjpeg-dev \
     zlib1g-dev \
@@ -55,9 +54,6 @@ sudo apt install -y \
     libgtk-3-dev \
     libcanberra-gtk* \
     libhdf5-dev \
-    libhdf5-serial-dev \
-    libqtgui4 \
-    libqt4-test \
     libffi-dev \
     libssl-dev \
     i2c-tools \
