@@ -17,8 +17,8 @@ hardware:
     cooling: "passive"  # passive for waterproof enclosure
     
   ai_hat:
-    enabled: false  # Optional for buoy deployment
-    model: "hailo8l"
+    enabled: true
+    model: "hailo10h"
     compute_units: 13
     
   camera:
