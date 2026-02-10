@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 @dataclass
 class ActuatorCommand:
     """Command for actuator control (pump, valve, carousel, LED)."""
