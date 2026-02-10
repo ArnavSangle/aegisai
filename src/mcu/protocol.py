@@ -1,3 +1,33 @@
+@dataclass
+class ActuatorCommand:
+    """Command for actuator control (pump, valve, carousel, LED)."""
+    actuator_type: ActuatorType
+    values: list
+    duration: float = 0.0
+
+    def to_packet(self) -> bytes:
+        """Convert actuator command to binary packet."""
+        protocol = MCUProtocol({})
+        return protocol.create_command('actuator', {
+            'type': self.actuator_type.name.lower(),
+            'values': self.values,
+            'duration': self.duration
+        })
+@dataclass
+class ActuatorCommand:
+    """Command for actuator control (pump, valve, carousel, LED)."""
+    actuator_type: ActuatorType
+    values: list
+    duration: float = 0.0
+
+    def to_packet(self) -> bytes:
+        """Convert actuator command to binary packet."""
+        protocol = MCUProtocol({})
+        return protocol.create_command('actuator', {
+            'type': self.actuator_type.name.lower(),
+            'values': self.values,
+            'duration': self.duration
+        })
 """
 MCU Protocol Definition
 Binary protocol for ESP32-S3 communication
